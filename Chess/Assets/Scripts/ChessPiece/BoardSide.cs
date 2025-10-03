@@ -4,6 +4,7 @@
 /// </summary>
 public enum BoardSide
 {
+    None = 0,
     Up = 1,
     Down = -1,
 }
