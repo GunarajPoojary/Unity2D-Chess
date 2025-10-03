@@ -1,5 +1,8 @@
 using UnityEngine;
 
+/// <summary>
+/// Data container class that holds the defining characteristics of a chess piece.
+/// </summary>
 [System.Serializable]
 public class PieceData
 {
