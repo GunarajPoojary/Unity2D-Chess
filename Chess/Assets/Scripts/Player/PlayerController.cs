@@ -5,6 +5,7 @@ public class PlayerController : MonoBehaviour
 {
     private Camera _mainCamera;
     private ChessPiece _selectedPiece;
+    private readonly List<Vector2Int> _selectedPieceLegalMoves = new();
     [SerializeField] private ChessBoard _board;
 
     private void Awake() => _mainCamera = Camera.main;
@@ -43,11 +44,48 @@ public class PlayerController : MonoBehaviour
                 if (_selectedPiece != null && _selectedPiece != piece)
                 {
                     GameEvents.RaiseUnHighlightEvent(_selectedPiece.PiecePosition);
+                    ClearValidMoves();
                 }
 
                 _selectedPiece = piece;
                 GameEvents.RaiseHighlightEvent(input, HighlightType.Selected);
+                _selectedPiece.MoveStrategy.CalculateLegalMoves(ServiceLocator.Get<IPlayerContext>().Color, input, OnLegalMoveFound);
+            }
+            else
+            {
+                if (_selectedPiece != null && _selectedPieceLegalMoves.Contains(input))
+                {
+                    ClearValidMoves();
+
+                    Vector2Int previousPosition = _selectedPiece.PiecePosition;
+                    _selectedPiece.SetPiecePosition(input);
+
+                    _board.SetOccupiedPiece(null, previousPosition);
+                    _board.SetOccupiedPiece(_selectedPiece, input);
+                }
             }
         }
+    }
+
+    private void ClearValidMoves()
+    {
+        foreach (Vector2Int position in _selectedPieceLegalMoves)
+            GameEvents.RaiseUnHighlightEvent(position);
+
+        if (_selectedPiece != null)
+            GameEvents.RaiseUnHighlightEvent(_selectedPiece.PiecePosition);
+
+        _selectedPieceLegalMoves.Clear();
+    }
+
+    private void OnLegalMoveFound(Vector2Int position, ChessPiece piece)
+    {
+        GameEvents.RaiseHighlightEvent(
+            new Vector2Int(position.x, position.y),
+            _board.HasOpponent(position, ServiceLocator.Get<IPlayerContext>().Color)
+                ? HighlightType.Move
+                : HighlightType.Capture);
+
+        _selectedPieceLegalMoves.Add(position);
     }
 }

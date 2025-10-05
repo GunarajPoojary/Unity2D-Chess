@@ -6,10 +6,16 @@ using UnityEngine;
 public class ChessPiece : MonoBehaviour
 {
     [field: SerializeField] public PieceData PieceData { get; private set; }
+    public IMoveStrategy MoveStrategy { get; private set; }
 
     public TeamColor Color => PieceData.Color;
     public PieceType Type => PieceData.Type;
     public BoardSide Side => PieceData.Side;
+
+    private void Start()
+    {
+        MoveStrategy = ServiceLocator.Get<IMoveStrategyFactory>().GetStrategy(Side, Type);
+    }
 
     /// <summary>
     /// Gets the current board position of this piece as a 2D integer coordinate.

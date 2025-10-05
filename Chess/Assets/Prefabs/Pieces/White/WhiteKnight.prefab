@@ -46,9 +46,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   <PieceData>k__BackingField:
-    <Type>k__BackingField: 2
-    <Color>k__BackingField: 0
-    <Side>k__BackingField: 1
+    <Type>k__BackingField: 3
+    <Color>k__BackingField: 1
+    <Side>k__BackingField: -1
 --- !u!1 &6929384850748192927
 GameObject:
   m_ObjectHideFlags: 0

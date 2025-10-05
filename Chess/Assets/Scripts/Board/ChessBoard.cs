@@ -26,6 +26,7 @@ public class ChessBoard : MonoBehaviour, IBoardQuery
     private void Awake()
     {
         InitializeBoardState();
+        ServiceLocator.Register<IBoardQuery>(this);
     }
 
     // Initializes the chess board by registering all white and black pieces

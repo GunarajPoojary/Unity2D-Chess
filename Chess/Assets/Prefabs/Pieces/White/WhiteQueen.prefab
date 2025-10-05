@@ -133,6 +133,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   <PieceData>k__BackingField:
-    <Type>k__BackingField: 4
-    <Color>k__BackingField: 0
-    <Side>k__BackingField: 1
+    <Type>k__BackingField: 5
+    <Color>k__BackingField: 1
+    <Side>k__BackingField: -1
