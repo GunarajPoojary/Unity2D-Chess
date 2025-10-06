@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6542861989337339273}
-  - component: {fileID: 4181721039327373527}
+  - component: {fileID: 3460983750393869478}
   m_Layer: 0
   m_Name: BlackKnight
   m_TagString: Untagged
@@ -33,7 +33,7 @@ Transform:
   - {fileID: 5854715710400487631}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4181721039327373527
+--- !u!114 &3460983750393869478
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -42,13 +42,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 5338720901001870856}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 54f62f9d73164804481fa417b95fe5d7, type: 3}
+  m_Script: {fileID: 11500000, guid: a08f07f33c0c0a6498bccd15054f2a3c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   <PieceData>k__BackingField:
     <Type>k__BackingField: 3
     <Color>k__BackingField: 2
-    <Side>k__BackingField: 1
 --- !u!1 &6929384850748192927
 GameObject:
   m_ObjectHideFlags: 0

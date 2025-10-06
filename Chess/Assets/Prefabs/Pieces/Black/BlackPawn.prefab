@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7462781105954379693}
-  - component: {fileID: 7716733523021109501}
+  - component: {fileID: 2156235839735885414}
   m_Layer: 0
   m_Name: BlackPawn
   m_TagString: Untagged
@@ -33,7 +33,7 @@ Transform:
   - {fileID: 1783063281475043602}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7716733523021109501
+--- !u!114 &2156235839735885414
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -42,13 +42,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 1929223058451223318}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 54f62f9d73164804481fa417b95fe5d7, type: 3}
+  m_Script: {fileID: 11500000, guid: aadb2eaf79d59754e9c6d3aa300fbf31, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   <PieceData>k__BackingField:
     <Type>k__BackingField: 1
     <Color>k__BackingField: 2
-    <Side>k__BackingField: 1
+  _movementDirection: -1
 --- !u!1 &2525365445872355469
 GameObject:
   m_ObjectHideFlags: 0

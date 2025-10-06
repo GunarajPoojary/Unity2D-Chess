@@ -36,20 +36,20 @@ public class PlayerController : MonoBehaviour
             Vector2 mouseWorldPos = _mainCamera.ScreenToWorldPoint(inputPos);
             Vector2Int input = Vector2Int.FloorToInt(mouseWorldPos);
 
-            if (!BoardUtilities.IsInsideBoard(input)) return;
+            if (!ChessBoard.IsInsideBoard(input)) return;
 
-            if (_board.TryGetPlayerPiece(input, out ChessPiece piece))
+            if (ChessBoard.TryGetPieceByColor(input,ServiceLocator.Get<IPlayerContext>().Color, out ChessPiece piece))
             {
                 // If new piece selected, unhighlight previous
                 if (_selectedPiece != null && _selectedPiece != piece)
                 {
-                    GameEvents.RaiseUnHighlightEvent(_selectedPiece.PiecePosition);
+                    GameEvents.RaiseUnHighlightEvent(_selectedPiece.CurrentTile);
                     ClearValidMoves();
                 }
 
                 _selectedPiece = piece;
                 GameEvents.RaiseHighlightEvent(input, HighlightType.Selected);
-                _selectedPiece.MoveStrategy.CalculateLegalMoves(ServiceLocator.Get<IPlayerContext>().Color, input, OnLegalMoveFound);
+                _selectedPiece.CalculateLegalMoves(OnLegalMoveFound);
             }
             else
             {
@@ -57,11 +57,11 @@ public class PlayerController : MonoBehaviour
                 {
                     ClearValidMoves();
 
-                    Vector2Int previousPosition = _selectedPiece.PiecePosition;
+                    Vector2Int previousPosition = _selectedPiece.CurrentTile;
                     _selectedPiece.SetPiecePosition(input);
 
-                    _board.SetOccupiedPiece(null, previousPosition);
-                    _board.SetOccupiedPiece(_selectedPiece, input);
+                    ChessBoard.SetOccupiedPiece(null, previousPosition);
+                    ChessBoard.SetOccupiedPiece(_selectedPiece, input);
                 }
             }
         }
@@ -73,18 +73,15 @@ public class PlayerController : MonoBehaviour
             GameEvents.RaiseUnHighlightEvent(position);
 
         if (_selectedPiece != null)
-            GameEvents.RaiseUnHighlightEvent(_selectedPiece.PiecePosition);
+            GameEvents.RaiseUnHighlightEvent(_selectedPiece.CurrentTile);
 
         _selectedPieceLegalMoves.Clear();
     }
 
     private void OnLegalMoveFound(Vector2Int position, ChessPiece piece)
     {
-        GameEvents.RaiseHighlightEvent(
-            new Vector2Int(position.x, position.y),
-            _board.HasOpponent(position, ServiceLocator.Get<IPlayerContext>().Color)
-                ? HighlightType.Move
-                : HighlightType.Capture);
+        GameEvents.RaiseHighlightEvent(new Vector2Int(position.x, position.y),
+            piece == null ? HighlightType.Move : HighlightType.Capture);
 
         _selectedPieceLegalMoves.Add(position);
     }

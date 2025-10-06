@@ -96,7 +96,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3479266958549191722}
-  - component: {fileID: 9001010021725184608}
+  - component: {fileID: 1486180193038000584}
   m_Layer: 0
   m_Name: BlackQueen
   m_TagString: Untagged
@@ -120,7 +120,7 @@ Transform:
   - {fileID: 5636138759479672168}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &9001010021725184608
+--- !u!114 &1486180193038000584
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -129,10 +129,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 6496412474978557998}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 54f62f9d73164804481fa417b95fe5d7, type: 3}
+  m_Script: {fileID: 11500000, guid: b9e0a59cce6f671428e268ee8d0b7cd2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   <PieceData>k__BackingField:
     <Type>k__BackingField: 5
     <Color>k__BackingField: 2
-    <Side>k__BackingField: 1

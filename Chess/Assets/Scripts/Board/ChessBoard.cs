@@ -1,33 +1,59 @@
 using UnityEngine;
 
-public interface IBoardQuery
-{
-    bool IsTileEmpty(Vector2Int pos);
-    bool HasAlly(Vector2Int pos, TeamColor color);
-    bool TryGetOpponent(Vector2Int pos, TeamColor color, out ChessPiece piece);
-}
-
 /// <summary>
 /// Manages the chess board state and piece registration.
 /// Maintains a 2D array representing the 8x8 chess board and tracks all piece positions.
 /// </summary>
-public class ChessBoard : MonoBehaviour, IBoardQuery
+public class ChessBoard : MonoBehaviour
 {
     [SerializeField] private ChessPiece[] _whitePieces;
     [SerializeField] private ChessPiece[] _blackPieces;
 
-    private const int ROW_TILES_COUNT = 8;
-    private const int COLUMN_TILES_COUNT = 8;
-
     // 2D array representing the 8x8 chess board grid
     // Each cell contains a reference to the ChessPiece occupying that position, or null if empty
-    private readonly ChessPiece[,] _boardState = new ChessPiece[ROW_TILES_COUNT, COLUMN_TILES_COUNT];
+    private static BoardGrid<ChessPiece> _board;
 
     private void Awake()
     {
+        _board = new BoardGrid<ChessPiece>(BoardConstants.FILES_COUNT, BoardConstants.RANKS_COUNT);
         InitializeBoardState();
-        ServiceLocator.Register<IBoardQuery>(this);
     }
+
+    #region Utility Methods
+    public static bool IsInsideBoard(Vector2Int tile) => _board.IsInside(tile);
+    public static bool IsTileEmpty(Vector2Int pos) => _board.IsInside(pos) && _board.Get(pos) == null;
+
+    public static bool TryGetPieceByColor(Vector2Int input, TeamColor color, out ChessPiece piece)
+    {
+        piece = null;
+
+        if (TryGetOccupiedPiece(input, out ChessPiece occupiedPiece))
+        {
+            piece = occupiedPiece.Color == color ? occupiedPiece : null;
+        }
+
+        return piece != null;
+    }
+
+    public static bool TryGetOccupiedPiece(Vector2Int pos, out ChessPiece piece)
+    {
+        piece = null;
+        if (!_board.IsInside(pos)) return false;
+
+        piece = _board.Get(pos);
+        return piece != null;
+    }
+
+    public static void SetOccupiedPiece(ChessPiece occupiedPiece, Vector2Int pos)
+    {
+        if (!_board.IsInside(pos))
+        {
+            Debug.LogError($"Invalid position: {pos}");
+            return;
+        }
+        _board.Set(pos, occupiedPiece);
+    }
+    #endregion
 
     // Initializes the chess board by registering all white and black pieces
     // into their respective positions in the board state array.
@@ -39,136 +65,16 @@ public class ChessBoard : MonoBehaviour, IBoardQuery
 
     // Registers an array of chess pieces into the board state array based on their current positions.
     // Each piece is placed in the 2D array at coordinates matching its PiecePosition.
-    private void RegisterPieces(ChessPiece[] chessPieces)
+    private void RegisterPieces(ChessPiece[] pieces)
     {
-        if (chessPieces == null) return;
+        if (pieces == null) return;
 
-        for (int i = 0; i < chessPieces.Length; i++)
+        foreach (var piece in pieces)
         {
-            // Get the current position of the piece from its transform
-            Vector2Int piecePosition = chessPieces[i].PiecePosition;
+            Vector2Int pos = piece.CurrentTile;
 
-            // Validate position before storing
-            if (BoardUtilities.IsInsideBoard(piecePosition))
-            {
-                _boardState[piecePosition.x, piecePosition.y] = chessPieces[i];
-            }
-            else
-            {
-                Debug.LogError($"Attempted to register piece at invalid position: {piecePosition}");
-            }
-        }
-    }
-
-    public bool TryGetPlayerPiece(Vector2Int piecePosition, out ChessPiece piece)
-    {
-        piece = null;
-
-        if (!BoardUtilities.IsInsideBoard(piecePosition))
-            return false;
-
-        piece = _boardState[piecePosition.x, piecePosition.y];
-        return piece != null /*&& piece.Color == PlayerManager.Instance.PlayerColor*/;
-    }
-
-    public bool IsTileEmpty(Vector2Int piecePosition)
-    {
-        if (!BoardUtilities.IsInsideBoard(piecePosition))
-            return false;
-
-        return _boardState[piecePosition.x, piecePosition.y] == null;
-    }
-
-    public bool HasOpponent(Vector2Int piecePosition, TeamColor color)
-    {
-        if (!BoardUtilities.IsInsideBoard(piecePosition))
-            return false;
-
-        return !IsTileEmpty(piecePosition) && _boardState[piecePosition.x, piecePosition.y].Color != color;
-    }
-
-    public bool TryGetOpponent(Vector2Int piecePosition, TeamColor color, out ChessPiece piece)
-    {
-        piece = null;
-
-        if (!BoardUtilities.IsInsideBoard(piecePosition))
-            return false;
-
-        if (!IsTileEmpty(piecePosition))
-        {
-            piece = _boardState[piecePosition.x, piecePosition.y];
-
-            if (piece.Color != color)
-                return true;
-        }
-
-        piece = null;
-        return false;
-    }
-
-    public bool HasAlly(Vector2Int piecePosition, TeamColor color)
-    {
-        if (!BoardUtilities.IsInsideBoard(piecePosition))
-            return false;
-
-        return !IsTileEmpty(piecePosition) && _boardState[piecePosition.x, piecePosition.y].Color == color;
-    }
-
-    public void SetOccupiedPiece(ChessPiece occupiedPiece, Vector2Int piecePosition)
-    {
-        if (!BoardUtilities.IsInsideBoard(piecePosition))
-        {
-            Debug.LogError($"Attempted to set piece at invalid position: {piecePosition}");
-            return;
-        }
-
-        _boardState[piecePosition.x, piecePosition.y] = occupiedPiece;
-    }
-
-    public bool TryCapturePiece(Vector2Int piecePosition, TeamColor color, out ChessPiece capturedPiece)
-    {
-        capturedPiece = null;
-
-        if (!BoardUtilities.IsInsideBoard(piecePosition))
-            return false;
-
-        if (HasOpponent(piecePosition, color))
-        {
-            capturedPiece = _boardState[piecePosition.x, piecePosition.y];
-            CapturePiece(piecePosition, capturedPiece);
-        }
-
-        return capturedPiece != null;
-    }
-
-    public bool TryGetOccupiedPiece(Vector2Int piecePosition, out ChessPiece occupiedPiece)
-    {
-        occupiedPiece = null;
-
-        if (!BoardUtilities.IsInsideBoard(piecePosition))
-            return false;
-
-        occupiedPiece = _boardState[piecePosition.x, piecePosition.y];
-        return occupiedPiece != null;
-    }
-
-    public ChessPiece GetOccupiedPiece(Vector2Int piecePosition)
-    {
-        if (!BoardUtilities.IsInsideBoard(piecePosition))
-        {
-            Debug.LogWarning($"Attempted to get piece at invalid position: {piecePosition}");
-            return null;
-        }
-
-        return _boardState[piecePosition.x, piecePosition.y];
-    }
-
-    private void CapturePiece(Vector2Int piecePosition, ChessPiece chessPiece)
-    {
-        if (chessPiece != null)
-        {
-            chessPiece.gameObject.SetActive(false);
-            SetOccupiedPiece(null, piecePosition);
+            if (_board.IsInside(pos))
+                _board.Set(pos, piece);
         }
     }
 }

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public static class Directions
+public static class DirectionUtility
 {
     public static readonly Vector2Int Up = Vector2Int.up;
     public static readonly Vector2Int Down = Vector2Int.down;

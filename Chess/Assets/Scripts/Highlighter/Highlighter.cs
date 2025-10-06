@@ -23,7 +23,7 @@ public class Highlighter : MonoBehaviour
                 break;
 
             case HighlightType.Move:
-                ApplyHighlight(_highlighterConfig.EmptyTileHighlightSprite);
+                ApplyHighlight(_highlighterConfig.MoveHighlightSprite);
                 break;
 
             case HighlightType.Capture:
