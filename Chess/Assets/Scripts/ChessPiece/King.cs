@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class King : ChessPiece
 {
-    public override void CalculateLegalMoves(Action<Vector2Int, ChessPiece> onLegalMoveFound)
+    public override void CalculateLegalMoves(Action<Vector2Int, bool> onLegalMoveFound)
     {
         foreach (Vector2Int dir in DirectionUtility.KingMoves)
         {
@@ -13,11 +13,11 @@ public class King : ChessPiece
 
             if (ChessBoard.IsTileEmpty(target))
             {
-                onLegalMoveFound?.Invoke(target, null);
+                onLegalMoveFound?.Invoke(target, false);
             }
             else if (ChessBoard.TryGetOccupiedPiece(target, out ChessPiece piece) && piece.Color != Color)
             {
-                onLegalMoveFound?.Invoke(target, piece);
+                onLegalMoveFound?.Invoke(target, true);
             }
         }
     }

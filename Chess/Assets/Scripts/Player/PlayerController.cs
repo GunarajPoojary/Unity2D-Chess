@@ -38,7 +38,7 @@ public class PlayerController : MonoBehaviour
 
             if (!ChessBoard.IsInsideBoard(input)) return;
 
-            if (ChessBoard.TryGetPieceByColor(input,ServiceLocator.Get<IPlayerContext>().Color, out ChessPiece piece))
+            if (ChessBoard.TryGetPieceByColor(input, ServiceLocator.Get<IPlayerContext>().Color, out ChessPiece piece))
             {
                 // If new piece selected, unhighlight previous
                 if (_selectedPiece != null && _selectedPiece != piece)
@@ -60,8 +60,7 @@ public class PlayerController : MonoBehaviour
                     Vector2Int previousPosition = _selectedPiece.CurrentTile;
                     _selectedPiece.SetPiecePosition(input);
 
-                    ChessBoard.SetOccupiedPiece(null, previousPosition);
-                    ChessBoard.SetOccupiedPiece(_selectedPiece, input);
+                    MakeMove(previousPosition, input, _selectedPiece);
                 }
             }
         }
@@ -78,11 +77,28 @@ public class PlayerController : MonoBehaviour
         _selectedPieceLegalMoves.Clear();
     }
 
-    private void OnLegalMoveFound(Vector2Int position, ChessPiece piece)
+    private void OnLegalMoveFound(Vector2Int position, bool isOccupiedByOpponent)
     {
         GameEvents.RaiseHighlightEvent(new Vector2Int(position.x, position.y),
-            piece == null ? HighlightType.Move : HighlightType.Capture);
+            isOccupiedByOpponent ? HighlightType.Capture : HighlightType.Move);
 
         _selectedPieceLegalMoves.Add(position);
+    }
+
+    private void MakeMove(Vector2Int from, Vector2Int to, ChessPiece piece)
+    {
+        // Check if target tile contains an opponent piece
+        if (ChessBoard.TryGetOccupiedPiece(to, out ChessPiece capturedPiece) && capturedPiece.Color != piece.Color)
+        {
+            // Deactivate the captured piece
+            capturedPiece.gameObject.SetActive(false);
+
+            // Raise capture event (you'll need to add this to GameEvents)
+            GameEvents.RaisePieceCapturedEvent(capturedPiece, to);
+        }
+
+        // Update board state
+        ChessBoard.SetOccupiedPiece(null, from);
+        ChessBoard.SetOccupiedPiece(piece, to);
     }
 }

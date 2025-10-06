@@ -11,7 +11,11 @@ public abstract class ChessPiece : MonoBehaviour
     public TeamColor Color => PieceData.Color;
     public PieceType Type => PieceData.Type;
 
-    public abstract void CalculateLegalMoves(Action<Vector2Int, ChessPiece> onLegalMoveFound);
+    /// <summary>
+    /// Calculates the legal moves for this chess piece.
+    /// Takes a callback which gives the position and a boolean indicating if the tile is occupied by opponent.
+    /// </summary>
+    public abstract void CalculateLegalMoves(Action<Vector2Int, bool> onLegalMoveFound);
 
     /// <summary>
     /// Gets the current board position of this piece as a 2D integer coordinate.

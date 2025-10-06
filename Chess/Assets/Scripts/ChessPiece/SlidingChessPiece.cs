@@ -5,7 +5,7 @@ public abstract class SlidingChessPiece : ChessPiece
 {
     protected abstract Vector2Int[] Directions { get; }
 
-    public override void CalculateLegalMoves(Action<Vector2Int, ChessPiece> onLegalMoveFound)
+    public override void CalculateLegalMoves(Action<Vector2Int, bool> onLegalMoveFound)
     {
         foreach (Vector2Int dir in Directions)
         {
@@ -15,12 +15,12 @@ public abstract class SlidingChessPiece : ChessPiece
             {
                 if (ChessBoard.IsTileEmpty(to))
                 {
-                    onLegalMoveFound?.Invoke(to, null);
+                    onLegalMoveFound?.Invoke(to, false);
                     to += dir;
                 }
                 else if (ChessBoard.TryGetOccupiedPiece(to, out ChessPiece piece) && piece.Color != Color)
                 {
-                    onLegalMoveFound?.Invoke(to, piece);
+                    onLegalMoveFound?.Invoke(to, true);
                     break;
                 }
                 else
