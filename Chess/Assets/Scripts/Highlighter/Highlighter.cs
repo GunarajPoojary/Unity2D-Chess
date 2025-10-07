@@ -29,6 +29,10 @@ public class Highlighter : MonoBehaviour
             case HighlightType.Capture:
                 ApplyHighlight(_highlighterConfig.CaptureHighlightSprite);
                 break;
+
+            case HighlightType.Check:
+                ApplyHighlight(_highlighterConfig.CheckHighlightSprite);
+                break;
         }
 
         _renderer.enabled = true;

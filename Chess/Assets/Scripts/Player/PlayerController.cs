@@ -3,19 +3,16 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    [SerializeField] private ChessBoard _board;
+    [SerializeField] private MoveValidator _moveValidator;
     private Camera _mainCamera;
     private ChessPiece _selectedPiece;
     private readonly List<Vector2Int> _selectedPieceLegalMoves = new();
-    [SerializeField] private ChessBoard _board;
 
     private void Awake() => _mainCamera = Camera.main;
+    private void Update() => HandleInput();
 
-    private void Update()
-    {
-        HandleMouseInput();
-    }
-
-    private void HandleMouseInput()
+    private void HandleInput()
     {
         Vector3 inputPos = Vector3.zero;
         bool inputDown = false;
@@ -36,45 +33,50 @@ public class PlayerController : MonoBehaviour
             Vector2 mouseWorldPos = _mainCamera.ScreenToWorldPoint(inputPos);
             Vector2Int input = Vector2Int.FloorToInt(mouseWorldPos);
 
-            if (!ChessBoard.IsInsideBoard(input)) return;
-
-            if (ChessBoard.TryGetPieceByColor(input, ServiceLocator.Get<IPlayerContext>().Color, out ChessPiece piece))
-            {
-                // If new piece selected, unhighlight previous
-                if (_selectedPiece != null && _selectedPiece != piece)
-                {
-                    GameEvents.RaiseUnHighlightEvent(_selectedPiece.CurrentTile);
-                    ClearValidMoves();
-                }
-
-                _selectedPiece = piece;
-                GameEvents.RaiseHighlightEvent(input, HighlightType.Selected);
-                _selectedPiece.CalculateLegalMoves(OnLegalMoveFound);
-            }
-            else
-            {
-                if (_selectedPiece != null && _selectedPieceLegalMoves.Contains(input))
-                {
-                    ClearValidMoves();
-
-                    Vector2Int previousPosition = _selectedPiece.CurrentTile;
-                    _selectedPiece.SetPiecePosition(input);
-
-                    MakeMove(previousPosition, input, _selectedPiece);
-                }
-            }
+            OnTileClicked(input);
         }
     }
 
-    private void ClearValidMoves()
+    private void OnTileClicked(Vector2Int clickedTile)
+    {
+        if (!ChessBoard.IsInsideBoard(clickedTile)) return;
+
+        if (_selectedPiece == null)
+            TrySelectPiece(clickedTile);
+        else
+            TryMoveSelectedPiece(clickedTile);
+    }
+
+    private void TrySelectPiece(Vector2Int tile)
+    {
+        if (ChessBoard.TryGetPieceByColor(tile, ServiceLocator.Get<IPlayerContext>().Color, out ChessPiece piece))
+        {
+            _selectedPiece = piece;
+            GameEvents.RaiseHighlightEvent(tile, HighlightType.Selected);
+            _moveValidator.GetLegalMoves(piece, OnLegalMoveFound);
+        }
+    }
+
+    private void TryMoveSelectedPiece(Vector2Int targetTile)
+    {
+        Vector2Int previousPos = _selectedPiece.CurrentTile;
+
+        if (_selectedPieceLegalMoves.Contains(targetTile))
+            MoveExecutor.Execute(_selectedPiece, targetTile);
+
+        DeselectPiece(previousPos);
+    }
+
+    private void DeselectPiece(Vector2Int previousPos)
     {
         foreach (Vector2Int position in _selectedPieceLegalMoves)
             GameEvents.RaiseUnHighlightEvent(position);
 
-        if (_selectedPiece != null)
-            GameEvents.RaiseUnHighlightEvent(_selectedPiece.CurrentTile);
+        GameEvents.RaiseUnHighlightEvent(previousPos);
 
         _selectedPieceLegalMoves.Clear();
+
+        _selectedPiece = null;
     }
 
     private void OnLegalMoveFound(Vector2Int position, bool isOccupiedByOpponent)
@@ -83,22 +85,5 @@ public class PlayerController : MonoBehaviour
             isOccupiedByOpponent ? HighlightType.Capture : HighlightType.Move);
 
         _selectedPieceLegalMoves.Add(position);
-    }
-
-    private void MakeMove(Vector2Int from, Vector2Int to, ChessPiece piece)
-    {
-        // Check if target tile contains an opponent piece
-        if (ChessBoard.TryGetOccupiedPiece(to, out ChessPiece capturedPiece) && capturedPiece.Color != piece.Color)
-        {
-            // Deactivate the captured piece
-            capturedPiece.gameObject.SetActive(false);
-
-            // Raise capture event (you'll need to add this to GameEvents)
-            GameEvents.RaisePieceCapturedEvent(capturedPiece, to);
-        }
-
-        // Update board state
-        ChessBoard.SetOccupiedPiece(null, from);
-        ChessBoard.SetOccupiedPiece(piece, to);
     }
 }

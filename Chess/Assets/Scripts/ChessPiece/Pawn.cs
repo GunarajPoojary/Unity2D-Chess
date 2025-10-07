@@ -6,7 +6,7 @@ public class Pawn : ChessPiece
     [SerializeField] private MovementDirection _movementDirection;
     private bool _hasMoved = false;
 
-    public override void CalculateLegalMoves(Action<Vector2Int, bool> onLegalMoveFound)
+    public override void CalculatePossibleMoves(Action<Vector2Int, bool> onPossibleMoveFound)
     {
         int direction = (int)_movementDirection;
         Vector2Int forwardOne = CurrentTile + DirectionUtility.Up * direction;
@@ -16,14 +16,14 @@ public class Pawn : ChessPiece
         // Forward move
         if (ChessBoard.IsTileEmpty(forwardOne))
         {
-            onLegalMoveFound?.Invoke(forwardOne, false);
+            onPossibleMoveFound?.Invoke(forwardOne, false);
 
             // Two-step move if pawn hasn't moved
             if (!_hasMoved)
             {
                 Vector2Int forwardTwo = CurrentTile + DirectionUtility.Up * direction * 2;
                 if (ChessBoard.IsInsideBoard(forwardTwo) && ChessBoard.IsTileEmpty(forwardTwo))
-                    onLegalMoveFound?.Invoke(forwardTwo, false);
+                    onPossibleMoveFound?.Invoke(forwardTwo, false);
             }
         }
 
@@ -36,7 +36,7 @@ public class Pawn : ChessPiece
                 ChessBoard.TryGetOccupiedPiece(target, out ChessPiece piece) &&
                 piece != null && piece.Color != Color)
             {
-                onLegalMoveFound?.Invoke(target, true);
+                onPossibleMoveFound?.Invoke(target, true);
             }
         }
     }

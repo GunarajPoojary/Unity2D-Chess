@@ -11,17 +11,20 @@ public class ChessBoard : MonoBehaviour
 
     // 2D array representing the 8x8 chess board grid
     // Each cell contains a reference to the ChessPiece occupying that position, or null if empty
-    private static BoardGrid<ChessPiece> _board;
+    private static BoardGrid<ChessPiece> _boardState;
+
+    public static ChessPiece WhiteKing{ get; private set; }
+    public static ChessPiece BlackKing{ get; private set; }
 
     private void Awake()
     {
-        _board = new BoardGrid<ChessPiece>(BoardConstants.FILES_COUNT, BoardConstants.RANKS_COUNT);
+        _boardState = new BoardGrid<ChessPiece>(BoardConstants.FILES_COUNT, BoardConstants.RANKS_COUNT);
         InitializeBoardState();
     }
 
     #region Utility Methods
-    public static bool IsInsideBoard(Vector2Int tile) => _board.IsInside(tile);
-    public static bool IsTileEmpty(Vector2Int pos) => _board.IsInside(pos) && _board.Get(pos) == null;
+    public static bool IsInsideBoard(Vector2Int tile) => _boardState.IsInside(tile);
+    public static bool IsTileEmpty(Vector2Int pos) => _boardState.IsInside(pos) && _boardState.Get(pos) == null;
 
     public static bool TryGetPieceByColor(Vector2Int input, TeamColor color, out ChessPiece piece)
     {
@@ -38,20 +41,72 @@ public class ChessBoard : MonoBehaviour
     public static bool TryGetOccupiedPiece(Vector2Int pos, out ChessPiece piece)
     {
         piece = null;
-        if (!_board.IsInside(pos)) return false;
+        if (!_boardState.IsInside(pos)) return false;
 
-        piece = _board.Get(pos);
+        piece = _boardState.Get(pos);
         return piece != null;
     }
 
-    public static void SetOccupiedPiece(ChessPiece occupiedPiece, Vector2Int pos)
+    private static void SetOccupiedPiece(ChessPiece piece, Vector2Int pos)
     {
-        if (!_board.IsInside(pos))
+        if (!_boardState.IsInside(pos))
         {
             Debug.LogError($"Invalid position: {pos}");
             return;
         }
-        _board.Set(pos, occupiedPiece);
+
+        _boardState.Set(pos, piece);
+
+        if (piece != null)
+            piece.SetPiecePosition(pos);
+    }
+
+    public static void MovePiece(ChessPiece piece, Vector2Int newPosition)
+    {
+        if (piece == null) return;
+
+        Vector2Int oldPosition = piece.CurrentTile;
+
+        // Update the board state
+        SetOccupiedPiece(piece, newPosition);
+        ClearOccupiedTile(oldPosition);
+    }
+
+    private static void ClearOccupiedTile(Vector2Int oldPosition)
+    {
+        if (!_boardState.IsInside(oldPosition)) return;
+
+        SetOccupiedPiece(null, oldPosition);
+    }
+
+    public bool IsKingInCheck(TeamColor color)
+    {
+        ChessPiece targetKing = color == TeamColor.White ? WhiteKing : BlackKing;
+        if (targetKing == null) return false;
+
+        Vector2Int kingPos = targetKing.CurrentTile;
+        ChessPiece[] opponentPieces = color == TeamColor.White ? _blackPieces : _whitePieces;
+
+        foreach (ChessPiece piece in opponentPieces)
+        {
+            if (piece == null || !piece.gameObject.activeSelf) continue;
+
+            bool isAttackingKing = false;
+
+            piece.CalculatePossibleMoves((movePos, isOpponentTile) =>
+            {
+                if (movePos == kingPos)
+                    isAttackingKing = true;
+            });
+
+            if (isAttackingKing)
+            {
+                Debug.Log($"{piece.name} is attacking {color} King!");
+                return true;
+            }
+        }
+
+        return false;
     }
     #endregion
 
@@ -69,12 +124,22 @@ public class ChessBoard : MonoBehaviour
     {
         if (pieces == null) return;
 
-        foreach (var piece in pieces)
+        foreach (ChessPiece piece in pieces)
         {
+            if (!piece.gameObject.activeSelf) continue;
+
             Vector2Int pos = piece.CurrentTile;
 
-            if (_board.IsInside(pos))
-                _board.Set(pos, piece);
+            if (_boardState.IsInside(pos))
+                _boardState.Set(pos, piece);
+
+            if (piece.Type == PieceType.King)
+            {
+                if (piece.Color == TeamColor.White)
+                    WhiteKing = piece;
+                else
+                    BlackKing = piece;
+            }
         }
     }
 }

@@ -7,4 +7,5 @@ public class HighlighterConfig : ScriptableObject
     [field: SerializeField] public Sprite SelectionHighlightSprite { get; private set; }
     [field: SerializeField] public Sprite CaptureHighlightSprite { get; private set; }
     [field: SerializeField] public Sprite MoveHighlightSprite { get; private set; }
+    [field: SerializeField] public Sprite CheckHighlightSprite { get; private set; }
 }
