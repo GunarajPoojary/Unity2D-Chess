@@ -4,6 +4,8 @@ using UnityEngine;
 public class MoveValidator : MonoBehaviour
 {
     [SerializeField] private ChessBoard _board;
+    private ChessPiece _selectedPiece = null;
+    private Action<Vector2Int, bool> _onLegalMoveFound = delegate { };
 
     private void OnEnable()
     {
@@ -17,36 +19,72 @@ public class MoveValidator : MonoBehaviour
 
     private void OnPieceMoved(ChessPiece piece, Vector2Int to)
     {
-        if (_board.IsKingInCheck(TeamColor.White))
-        {
-            Debug.Log($"King is in check after moving {piece.name} to {to}");
-        }
-        else if (_board.IsKingInCheck(TeamColor.Black))
-        {
-            Debug.Log($"King is in check after moving {piece.name} to {to}");
-        }
+        if (IsKingInCheck(TeamColor.White))
+            GameEvents.RaiseHighlightEvent(ChessBoard.WhiteKing.CurrentTile, HighlightType.Check);
+        else
+            GameEvents.RaiseUnHighlightEvent(ChessBoard.WhiteKing.CurrentTile);
+
+        if (IsKingInCheck(TeamColor.Black))
+            GameEvents.RaiseHighlightEvent(ChessBoard.BlackKing.CurrentTile, HighlightType.Check);
+        else
+            GameEvents.RaiseUnHighlightEvent(ChessBoard.BlackKing.CurrentTile);
     }
 
     public void GetLegalMoves(ChessPiece piece, Action<Vector2Int, bool> onLegalMoveFound)
     {
-        piece.CalculatePossibleMoves((position, isOccupiedByOpponent) =>
+        if (piece == null) return;
+
+        TeamColor opponentColor = piece.Color == TeamColor.White ? TeamColor.Black : TeamColor.White;
+        _selectedPiece = piece;
+        _onLegalMoveFound = onLegalMoveFound;
+
+        piece.CalculatePossibleMoves(OnPossibleMoveFound);
+    }
+
+    private void OnPossibleMoveFound(Vector2Int position, bool isOccupiedByOpponent)
+    {
+        Vector2Int previousPosition = _selectedPiece.CurrentTile;
+
+        ChessBoard.MovePiece(_selectedPiece, position);
+
+        if (IsKingInCheck(_selectedPiece.Color))
         {
-            if (piece != null && _board.IsKingInCheck(piece.Color))
+            ChessBoard.MovePiece(_selectedPiece, previousPosition);
+            return;
+        }
+        
+        ChessBoard.MovePiece(_selectedPiece, previousPosition);
+
+        _onLegalMoveFound?.Invoke(position, isOccupiedByOpponent);
+    }
+
+    private bool IsKingInCheck(TeamColor color)
+    {
+        ChessPiece targetKing = color == TeamColor.White ? ChessBoard.WhiteKing : ChessBoard.BlackKing;
+        if (targetKing == null) return false;
+
+        Vector2Int kingPos = targetKing.CurrentTile;
+        ChessPiece[] opponentPieces = color == TeamColor.White ? _board.BlackPieces : _board.WhitePieces;
+
+        foreach (ChessPiece piece in opponentPieces)
+        {
+            if (piece == null || !piece.gameObject.activeSelf) continue;
+
+            bool isAttackingKing = false;
+
+            piece.CalculatePossibleMoves((movePos, isOpponentTile) =>
             {
-                Vector2Int previousPosition = piece.CurrentTile;
+                if (movePos == kingPos) isAttackingKing = true;
+            });
 
-                ChessBoard.MovePiece(piece, position);
+            if (isAttackingKing) return true;
+        }
 
-                if (_board.IsKingInCheck(ServiceLocator.Get<IPlayerContext>().Color))
-                {
-                    ChessBoard.MovePiece(piece, previousPosition);
-                    return;
-                }
+        return false;
+    }
 
-                ChessBoard.MovePiece(piece, previousPosition);
-            }
+    private void CalculatePseudoLegalMoves()
+    {
 
-            onLegalMoveFound?.Invoke(position, isOccupiedByOpponent);
-        });
     }
 }

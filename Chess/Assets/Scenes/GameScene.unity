@@ -2410,6 +2410,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3014910214419500576, guid: de3e513d1270c234cbeb1b6357ea43b8, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7977158193812648393, guid: de3e513d1270c234cbeb1b6357ea43b8, type: 3}
       propertyPath: m_Name
       value: BoardGFX
@@ -2627,11 +2631,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8597268152931812383, guid: 18ac3dd07e121ab4aa40d5c7c4baeaa7, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -2
+      value: -3
       objectReference: {fileID: 0}
     - target: {fileID: 8597268152931812383, guid: 18ac3dd07e121ab4aa40d5c7c4baeaa7, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 3
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8597268152931812383, guid: 18ac3dd07e121ab4aa40d5c7c4baeaa7, type: 3}
       propertyPath: m_LocalPosition.z

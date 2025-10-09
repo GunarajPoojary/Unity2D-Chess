@@ -13,7 +13,9 @@ public class ChessBoard : MonoBehaviour
     // Each cell contains a reference to the ChessPiece occupying that position, or null if empty
     private static BoardGrid<ChessPiece> _boardState;
 
-    public static ChessPiece WhiteKing{ get; private set; }
+    public ChessPiece[] WhitePieces => _whitePieces;
+    public ChessPiece[] BlackPieces => _blackPieces;
+    public static ChessPiece WhiteKing { get; private set; }
     public static ChessPiece BlackKing{ get; private set; }
 
     private void Awake()
@@ -77,36 +79,6 @@ public class ChessBoard : MonoBehaviour
         if (!_boardState.IsInside(oldPosition)) return;
 
         SetOccupiedPiece(null, oldPosition);
-    }
-
-    public bool IsKingInCheck(TeamColor color)
-    {
-        ChessPiece targetKing = color == TeamColor.White ? WhiteKing : BlackKing;
-        if (targetKing == null) return false;
-
-        Vector2Int kingPos = targetKing.CurrentTile;
-        ChessPiece[] opponentPieces = color == TeamColor.White ? _blackPieces : _whitePieces;
-
-        foreach (ChessPiece piece in opponentPieces)
-        {
-            if (piece == null || !piece.gameObject.activeSelf) continue;
-
-            bool isAttackingKing = false;
-
-            piece.CalculatePossibleMoves((movePos, isOpponentTile) =>
-            {
-                if (movePos == kingPos)
-                    isAttackingKing = true;
-            });
-
-            if (isAttackingKing)
-            {
-                Debug.Log($"{piece.name} is attacking {color} King!");
-                return true;
-            }
-        }
-
-        return false;
     }
     #endregion
 
