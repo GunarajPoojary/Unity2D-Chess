@@ -57,7 +57,7 @@ public class MoveValidator : MonoBehaviour
     }
 
     // Checks if the move is attack on opponent king
-    private void HandlePossibleMove(Vector2Int tile, bool isOccupied)
+    private void HandlePossibleMove(Vector2Int tile, ChessPiece opponentPiece)
     {
         if (tile == _opponentKing.CurrentTile)
         {
@@ -73,17 +73,17 @@ public class MoveValidator : MonoBehaviour
         opponentPiece.CalculatePossibleMoves(CheckIfLegalEscapeMove);
     }
 
-    private void CheckIfLegalEscapeMove(Vector2Int movePos, bool isOpponentTile)
+    private void CheckIfLegalEscapeMove(Vector2Int movePos, ChessPiece opponentPiece)
     {
         Vector2Int fromPos = _currentCheckingPiece.CurrentTile;
-        ChessBoard.PseudoMovePiece(_currentCheckingPiece, fromPos, movePos, out ChessPiece capturedPiece);
+        ChessBoard.PseudoMovePiece(_currentCheckingPiece, fromPos, movePos);
 
         King opponentKing = _opponentKing;
         Vector2Int kingPosToCheck = _currentCheckingPiece is King ? movePos : opponentKing.CurrentTile;
 
-        bool stillInCheck = IsUnderAttack(kingPosToCheck, _attackingPieces, capturedPiece);
+        bool stillInCheck = IsUnderAttack(kingPosToCheck, _attackingPieces, opponentPiece);
 
-        ChessBoard.UndoPseudoMove(_currentCheckingPiece, fromPos, movePos, capturedPiece);
+        ChessBoard.UndoPseudoMove(_currentCheckingPiece, fromPos, movePos, opponentPiece);
 
         if (!stillInCheck)
         {
@@ -103,11 +103,11 @@ public class MoveValidator : MonoBehaviour
         _onLegalMoveFound = null;
     }
 
-    private void CheckLegalMove(Vector2Int targetPosition, bool isOccupiedByOpponent)
+    private void CheckLegalMove(Vector2Int targetPosition, ChessPiece opponentPiece)
     {
         Vector2Int currentPosition = _selectedPiece.CurrentTile;
 
-        ChessBoard.PseudoMovePiece(_selectedPiece, currentPosition, targetPosition, out ChessPiece capturedPiece);
+        ChessBoard.PseudoMovePiece(_selectedPiece, currentPosition, targetPosition);
 
         King targetKing = _selectedPiece.Color == TeamColor.White ? ChessBoard.WhiteKing : ChessBoard.BlackKing;
         ChessPiece[] opponentPieces = _selectedPiece.Color == TeamColor.White ? _board.BlackPieces : _board.WhitePieces;
@@ -115,12 +115,12 @@ public class MoveValidator : MonoBehaviour
         Vector2Int kingPosToCheck = _selectedPiece == targetKing ? targetPosition : targetKing.CurrentTile;
 
         // Check if the tile under attack after making PseudoMove
-        bool isUnderAttack = IsUnderAttack(kingPosToCheck, opponentPieces, capturedPiece);
+        bool isUnderAttack = IsUnderAttack(kingPosToCheck, opponentPieces, opponentPiece);
 
-        ChessBoard.UndoPseudoMove(_selectedPiece, currentPosition, targetPosition, capturedPiece);
+        ChessBoard.UndoPseudoMove(_selectedPiece, currentPosition, targetPosition, opponentPiece);
 
         if (!isUnderAttack)
-            _onLegalMoveFound?.Invoke(targetPosition, isOccupiedByOpponent);
+            _onLegalMoveFound?.Invoke(targetPosition, opponentPiece);
     }
 
     private bool IsUnderAttack(Vector2Int position, ChessPiece[] attackingPieces, ChessPiece excludePiece = null)

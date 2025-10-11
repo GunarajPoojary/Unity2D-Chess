@@ -78,17 +78,14 @@ public class ChessBoard : MonoBehaviour
         SetOccupiedPiece(null, oldPosition);
     }
 
-    public static void PseudoMovePiece(ChessPiece piece, Vector2Int from, Vector2Int to, out ChessPiece capturedPiece)
+    public static void PseudoMovePiece(ChessPiece piece, Vector2Int from, Vector2Int to)
     {
-        capturedPiece = null;
-
         // Remove from current tile
         _boardState.Set(from, null);
 
         // Check if target has opponent piece
         if (_boardState.IsInside(to))
         {
-            capturedPiece = _boardState.Get(to);
             _boardState.Set(to, piece);
         }
     }

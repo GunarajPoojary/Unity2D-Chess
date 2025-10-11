@@ -15,7 +15,7 @@ public abstract class ChessPiece : MonoBehaviour
     /// Calculates the possible moves for this chess piece.
     /// Takes a callback which gives the position and a boolean indicating if the tile is occupied by opponent.
     /// </summary>
-    public abstract void CalculatePossibleMoves(Action<Vector2Int, bool> onPossibleMoveFound);
+    public abstract void CalculatePossibleMoves(Action<Vector2Int, ChessPiece> onPossibleMoveFound);
 
     /// <summary>
     /// Gets the current board position of this piece as a 2D integer coordinate.
