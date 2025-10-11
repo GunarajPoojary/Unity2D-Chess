@@ -15,14 +15,11 @@ public class ChessBoard : MonoBehaviour
 
     public ChessPiece[] WhitePieces => _whitePieces;
     public ChessPiece[] BlackPieces => _blackPieces;
-    public static ChessPiece WhiteKing { get; private set; }
-    public static ChessPiece BlackKing{ get; private set; }
+    public static King WhiteKing { get; private set; }
+    public static King BlackKing { get; private set; }
 
-    private void Awake()
-    {
-        _boardState = new BoardGrid<ChessPiece>(BoardConstants.FILES_COUNT, BoardConstants.RANKS_COUNT);
-        InitializeBoardState();
-    }
+    private void Awake() => _boardState = new BoardGrid<ChessPiece>(BoardConstants.FILES_COUNT, BoardConstants.RANKS_COUNT);
+    private void Start() => InitializeBoardState();
 
     #region Utility Methods
     public static bool IsInsideBoard(Vector2Int tile) => _boardState.IsInside(tile);
@@ -80,14 +77,42 @@ public class ChessBoard : MonoBehaviour
 
         SetOccupiedPiece(null, oldPosition);
     }
+
+    public static void PseudoMovePiece(ChessPiece piece, Vector2Int from, Vector2Int to, out ChessPiece capturedPiece)
+    {
+        capturedPiece = null;
+
+        // Remove from current tile
+        _boardState.Set(from, null);
+
+        // Check if target has opponent piece
+        if (_boardState.IsInside(to))
+        {
+            capturedPiece = _boardState.Get(to);
+            _boardState.Set(to, piece);
+        }
+    }
+
+    public static void UndoPseudoMove(ChessPiece piece, Vector2Int from, Vector2Int to, ChessPiece capturedPiece)
+    {
+        // Restore board state
+        _boardState.Set(to, capturedPiece);
+        _boardState.Set(from, piece);
+    }
+
+    public static ChessPiece GetPieceAt(Vector2Int pos)
+    {
+        if (!_boardState.IsInside(pos)) return null;
+        return _boardState.Get(pos);
+    }
     #endregion
 
     // Initializes the chess board by registering all white and black pieces
     // into their respective positions in the board state array.
     private void InitializeBoardState()
     {
-        RegisterPieces(_whitePieces);
         RegisterPieces(_blackPieces);
+        RegisterPieces(_whitePieces);
     }
 
     // Registers an array of chess pieces into the board state array based on their current positions.
@@ -108,10 +133,15 @@ public class ChessBoard : MonoBehaviour
             if (piece.Type == PieceType.King)
             {
                 if (piece.Color == TeamColor.White)
-                    WhiteKing = piece;
+                    WhiteKing = (King)piece;
                 else
-                    BlackKing = piece;
+                    BlackKing = (King)piece;
             }
         }
+    }
+
+    public Vector3 TileToWorld(Vector2Int boardPos)
+    {
+        return transform.position;
     }
 }

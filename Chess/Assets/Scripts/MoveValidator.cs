@@ -7,6 +7,12 @@ public class MoveValidator : MonoBehaviour
     private ChessPiece _selectedPiece = null;
     private Action<Vector2Int, bool> _onLegalMoveFound = delegate { };
 
+    private bool _isCheck;
+    private bool _hasLegalMoves;
+    private ChessPiece[] _attackingPieces;
+    private King _opponentKing;
+    private ChessPiece _currentCheckingPiece;
+
     private void OnEnable()
     {
         GameEvents.OnPieceMovedEventRaised += OnPieceMoved;
@@ -19,72 +25,126 @@ public class MoveValidator : MonoBehaviour
 
     private void OnPieceMoved(ChessPiece piece, Vector2Int to)
     {
-        if (IsKingInCheck(TeamColor.White))
-            GameEvents.RaiseHighlightEvent(ChessBoard.WhiteKing.CurrentTile, HighlightType.Check);
-        else
-            GameEvents.RaiseUnHighlightEvent(ChessBoard.WhiteKing.CurrentTile);
+        _opponentKing = piece.Color == TeamColor.White ? ChessBoard.BlackKing : ChessBoard.WhiteKing;
 
-        if (IsKingInCheck(TeamColor.Black))
-            GameEvents.RaiseHighlightEvent(ChessBoard.BlackKing.CurrentTile, HighlightType.Check);
-        else
-            GameEvents.RaiseUnHighlightEvent(ChessBoard.BlackKing.CurrentTile);
+        _isCheck = false;
+
+        _currentCheckingPiece = piece;
+
+        piece.CalculatePossibleMoves(HandlePossibleMove);
+
+        if (_isCheck)
+        {
+            _hasLegalMoves = false;
+            ChessPiece[] opponentPieces = piece.Color == TeamColor.White ? _board.BlackPieces : _board.WhitePieces;
+            _attackingPieces = piece.Color == TeamColor.White ? _board.WhitePieces : _board.BlackPieces;
+
+            foreach (ChessPiece opponentPiece in opponentPieces)
+            {
+                if (opponentPiece == null || !opponentPiece.gameObject.activeSelf)
+                    continue;
+
+                // Always check king moves for correctness, even if already found other legal moves
+                SimulateOpponentMoves(opponentPiece);
+            }
+
+            if (!_hasLegalMoves)
+            {
+                Debug.Log("CHECKMATE — King has no legal moves!");
+                GameEvents.RaiseHighlightEvent(_opponentKing.CurrentTile, HighlightType.Check);
+            }
+        }
     }
 
+    // Checks if the move is attack on opponent king
+    private void HandlePossibleMove(Vector2Int tile, bool isOccupied)
+    {
+        if (tile == _opponentKing.CurrentTile)
+        {
+            _isCheck = true;
+            Debug.Log("CHECK — King is under attck!");
+            GameEvents.RaiseHighlightEvent(_opponentKing.CurrentTile, HighlightType.Check);
+        }
+    }
+
+    private void SimulateOpponentMoves(ChessPiece opponentPiece)
+    {
+        _currentCheckingPiece = opponentPiece;
+        opponentPiece.CalculatePossibleMoves(CheckIfLegalEscapeMove);
+    }
+
+    private void CheckIfLegalEscapeMove(Vector2Int movePos, bool isOpponentTile)
+    {
+        Vector2Int fromPos = _currentCheckingPiece.CurrentTile;
+        ChessBoard.PseudoMovePiece(_currentCheckingPiece, fromPos, movePos, out ChessPiece capturedPiece);
+
+        King opponentKing = _opponentKing;
+        Vector2Int kingPosToCheck = _currentCheckingPiece is King ? movePos : opponentKing.CurrentTile;
+
+        bool stillInCheck = IsUnderAttack(kingPosToCheck, _attackingPieces, capturedPiece);
+
+        ChessBoard.UndoPseudoMove(_currentCheckingPiece, fromPos, movePos, capturedPiece);
+
+        if (!stillInCheck)
+        {
+            _hasLegalMoves = true;
+        }
+    }
     public void GetLegalMoves(ChessPiece piece, Action<Vector2Int, bool> onLegalMoveFound)
     {
         if (piece == null) return;
 
-        TeamColor opponentColor = piece.Color == TeamColor.White ? TeamColor.Black : TeamColor.White;
         _selectedPiece = piece;
         _onLegalMoveFound = onLegalMoveFound;
 
-        piece.CalculatePossibleMoves(OnPossibleMoveFound);
+        piece.CalculatePossibleMoves(CheckLegalMove);
+
+        _selectedPiece = null;
+        _onLegalMoveFound = null;
     }
 
-    private void OnPossibleMoveFound(Vector2Int position, bool isOccupiedByOpponent)
+    private void CheckLegalMove(Vector2Int targetPosition, bool isOccupiedByOpponent)
     {
-        Vector2Int previousPosition = _selectedPiece.CurrentTile;
+        Vector2Int currentPosition = _selectedPiece.CurrentTile;
 
-        ChessBoard.MovePiece(_selectedPiece, position);
+        ChessBoard.PseudoMovePiece(_selectedPiece, currentPosition, targetPosition, out ChessPiece capturedPiece);
 
-        if (IsKingInCheck(_selectedPiece.Color))
-        {
-            ChessBoard.MovePiece(_selectedPiece, previousPosition);
-            return;
-        }
-        
-        ChessBoard.MovePiece(_selectedPiece, previousPosition);
+        King targetKing = _selectedPiece.Color == TeamColor.White ? ChessBoard.WhiteKing : ChessBoard.BlackKing;
+        ChessPiece[] opponentPieces = _selectedPiece.Color == TeamColor.White ? _board.BlackPieces : _board.WhitePieces;
 
-        _onLegalMoveFound?.Invoke(position, isOccupiedByOpponent);
+        Vector2Int kingPosToCheck = _selectedPiece == targetKing ? targetPosition : targetKing.CurrentTile;
+
+        // Check if the tile under attack after making PseudoMove
+        bool isUnderAttack = IsUnderAttack(kingPosToCheck, opponentPieces, capturedPiece);
+
+        ChessBoard.UndoPseudoMove(_selectedPiece, currentPosition, targetPosition, capturedPiece);
+
+        if (!isUnderAttack)
+            _onLegalMoveFound?.Invoke(targetPosition, isOccupiedByOpponent);
     }
 
-    private bool IsKingInCheck(TeamColor color)
+    private bool IsUnderAttack(Vector2Int position, ChessPiece[] attackingPieces, ChessPiece excludePiece = null)
     {
-        ChessPiece targetKing = color == TeamColor.White ? ChessBoard.WhiteKing : ChessBoard.BlackKing;
-        if (targetKing == null) return false;
+        bool isUnderAttack = false;
 
-        Vector2Int kingPos = targetKing.CurrentTile;
-        ChessPiece[] opponentPieces = color == TeamColor.White ? _board.BlackPieces : _board.WhitePieces;
-
-        foreach (ChessPiece piece in opponentPieces)
+        foreach (ChessPiece piece in attackingPieces)
         {
-            if (piece == null || !piece.gameObject.activeSelf) continue;
+            if (piece == null || !piece.gameObject.activeSelf || piece == excludePiece)
+                continue;
 
-            bool isAttackingKing = false;
+            if (piece.CurrentTile == position)
+                continue;
 
             piece.CalculatePossibleMoves((movePos, isOpponentTile) =>
             {
-                if (movePos == kingPos) isAttackingKing = true;
+                if (movePos == position)
+                    isUnderAttack = true;
             });
 
-            if (isAttackingKing) return true;
+            if (isUnderAttack)
+                break;
         }
 
-        return false;
-    }
-
-    private void CalculatePseudoLegalMoves()
-    {
-
+        return isUnderAttack;
     }
 }
