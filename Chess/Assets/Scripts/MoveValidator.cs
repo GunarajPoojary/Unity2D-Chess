@@ -54,6 +54,14 @@ public class MoveValidator : MonoBehaviour
                 GameEvents.RaiseHighlightEvent(_opponentKing.CurrentTile, HighlightType.Check);
             }
         }
+        else
+        {
+            if (!_hasLegalMoves)
+            {
+                Debug.Log("STALEMATE — No legal moves but not in check.");
+                GameEvents.RaiseDrawEvent(); 
+            }
+        }
     }
 
     // Checks if the move is attack on opponent king
