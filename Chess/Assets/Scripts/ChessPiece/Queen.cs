@@ -1,6 +1,11 @@
-using UnityEngine;
+using System;
 
-public class Queen : SlidingChessPiece
+public class Queen : ChessPiece
 {
-    protected override Vector2Int[] Directions => DirectionUtility.EightDirections;
+    private readonly IMoveStrategy _moveStrategy = new QueenMoveStrategy();
+
+    public override void CalculatePossibleMoves(IBoardService board, TileData currentTile, Action<Move> onPossibleMoveFound)
+    {
+        _moveStrategy.TryGetMoves(board, pieceData.Color, currentTile, onPossibleMoveFound);
+    }
 }

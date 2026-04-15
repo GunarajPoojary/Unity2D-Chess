@@ -1,6 +1,11 @@
-using UnityEngine;
+using System;
 
-public class Rook : SlidingChessPiece
+public class Rook : ChessPiece
 {
-    protected override Vector2Int[] Directions => DirectionUtility.Orthogonals;
+    private readonly IMoveStrategy _moveStrategy = new RookMoveStrategy();
+
+    public override void CalculatePossibleMoves(IBoardService board, TileData currentTile, Action<Move> onPossibleMoveFound)
+    {
+        _moveStrategy.TryGetMoves(board, pieceData.Color, currentTile, onPossibleMoveFound);
+    }
 }

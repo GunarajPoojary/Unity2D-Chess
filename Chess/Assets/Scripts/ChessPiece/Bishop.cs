@@ -1,6 +1,11 @@
-using UnityEngine;
+using System;
 
-public class Bishop : SlidingChessPiece
+public class Bishop : ChessPiece
 {
-    protected override Vector2Int[] Directions => DirectionUtility.Diagonals;
+    private readonly IMoveStrategy _moveStrategy = new BishopMoveStrategy();
+
+    public override void CalculatePossibleMoves(IBoardService board, TileData currentTile, Action<Move> onPossibleMoveFound)
+    {
+        _moveStrategy.TryGetMoves(board, pieceData.Color, currentTile, onPossibleMoveFound);
+    }
 }

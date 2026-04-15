@@ -3,87 +3,123 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    [SerializeField] private ChessBoard _board;
-    [SerializeField] private MoveValidator _moveValidator;
-    private Camera _mainCamera;
-    private ChessPiece _selectedPiece;
-    private readonly List<Vector2Int> _selectedPieceLegalMoves = new();
+    [SerializeField] private Camera _camera;
+    [SerializeField] private Board _chessBoard;
+    [SerializeField] private float _rayDistance = 100f;
+    [SerializeField] private LayerMask _pieceMask;
 
-    private void Awake() => _mainCamera = Camera.main;
-    private void Update() => HandleInput();
+    private ChessPiece _draggingPiece;
+    private Vector3 _offset;
+    private readonly List<Move> _validMoves = new List<Move>();
 
-    private void HandleInput()
+    private void Update()
     {
-        Vector3 inputPos = Vector3.zero;
-        bool inputDown = false;
+        HandleMouseInput();
+    }
 
-#if UNITY_EDITOR || UNITY_STANDALONE || UNITY_WEBGL
-        inputDown = Input.GetMouseButtonDown(0);
-        inputPos = Input.mousePosition;
-#else
-            if (Input.touchCount > 0)
-            {
-                Touch touch = Input.GetTouch(0);
-                inputPos = touch.position;
-                inputDown = touch.phase == TouchPhase.Began;
-            }
-#endif
-        if (inputDown)
+    private void HandleMouseInput()
+    {
+        if (Input.GetMouseButtonDown(0))
+            TryStartDrag();
+        else if (Input.GetMouseButton(0))
+            Drag();
+        else if (Input.GetMouseButtonUp(0))
+            Drop();
+    }
+
+    private void TryStartDrag()
+    {
+        Vector2 mouseWorld = GetMouseWorldPosition();
+        RaycastHit2D hit = Physics2D.Raycast(mouseWorld, Vector2.zero, _rayDistance, _pieceMask);
+
+        if (hit.collider == null)
         {
-            Vector2 mouseWorldPos = _mainCamera.ScreenToWorldPoint(inputPos);
-            Vector2Int input = Vector2Int.FloorToInt(mouseWorldPos);
+            Debug.Log("[PlayerController] TryStartDrag — no collider hit.");
+            return;
+        }
 
-            OnTileClicked(input);
+        if (!hit.collider.TryGetComponent(out ChessPiece piece))
+        {
+            return;
+        }
+
+        _draggingPiece = piece;
+        _offset = piece.transform.position - (Vector3)mouseWorld;
+
+        TileData pieceTile = _chessBoard.GetTile(piece);
+
+        _validMoves.Clear();
+        piece.CalculatePossibleMoves(_chessBoard, pieceTile, move => _validMoves.Add(move));
+
+        Debug.Log($"[PlayerController] Started dragging {piece.name} at {pieceTile}. " +
+                  $"Found {_validMoves.Count} valid move(s).");
+
+        foreach (var move in _validMoves)
+        {
+            Debug.Log($"[PlayerController] Valid move → {move.To}" +
+                      (move.CapturedPiece != null ? $" (captures {move.CapturedPiece.name})" : ""));
         }
     }
 
-    private void OnTileClicked(Vector2Int clickedTile)
+    private void Drag()
     {
-        if (!ChessBoard.IsInsideBoard(clickedTile)) return;
+        if (_draggingPiece == null)
+            return;
 
-        if (_selectedPiece == null)
-            TrySelectPiece(clickedTile);
+        Vector2 mouseWorld = GetMouseWorldPosition();
+        _draggingPiece.transform.position = mouseWorld + (Vector2)_offset;
+    }
+
+    private void Drop()
+    {
+        if (_draggingPiece == null)
+            return;
+
+        Vector2 mouseWorld = GetMouseWorldPosition();
+        RaycastHit2D hit = Physics2D.Raycast(mouseWorld, Vector2.zero);
+
+        bool validDrop = false;
+        TileData targetTile = default;
+
+        // if (hit.collider != null && _chessBoard.TryGetTile(hit.collider, out targetTile))
+        // {
+        //     validDrop = _validMoves.Exists(m => m.To == targetTile);
+        //     Debug.Log($"[PlayerController] Drop — hit tile {targetTile}. Valid: {validDrop}");
+        // }
+        // else
+        // {
+        //     Debug.Log("[PlayerController] Drop — no valid tile hit. Snapping piece back.");
+        // }
+
+        if (validDrop)
+            ExecuteMove(_draggingPiece, targetTile);
         else
-            TryMoveSelectedPiece(clickedTile);
+            SnapBack(_draggingPiece);
+
+        // _chessBoard.SetAllColliders(true);
+        _draggingPiece = null;
+        _validMoves.Clear();
     }
 
-    private void TrySelectPiece(Vector2Int tile)
+    private void ExecuteMove(ChessPiece piece, TileData targetTile)
     {
-        if (ChessBoard.TryGetPieceByColor(tile, ServiceLocator.Get<IPlayerContext>().Color, out ChessPiece piece))
-        {
-            _selectedPiece = piece;
-            GameEvents.RaiseHighlightEvent(tile, HighlightType.Selected);
-            _moveValidator.GetLegalMoves(piece, OnLegalMoveFound);
-        }
+        // Debug.Log($"[PlayerController] ExecuteMove — {piece.name} → {targetTile}");
+
+
+        // if (piece is Pawn pawn)
+        // {
+        //     pawn.MarkAsMoved();
+        //     Debug.Log($"[PlayerController] Pawn {pawn.name} marked as moved.");
+        // }
     }
 
-    private void TryMoveSelectedPiece(Vector2Int targetTile)
+    private void SnapBack(ChessPiece piece)
     {
-        Vector2Int previousPos = _selectedPiece.CurrentTile;
-
-        if (_selectedPieceLegalMoves.Contains(targetTile))
-            MoveExecutor.Execute(_selectedPiece, targetTile);
-
-        DeselectPiece(previousPos);
+        // Debug.Log($"[PlayerController] SnapBack — returning {piece.name} to {piece.CurrentTile}");
     }
 
-    private void DeselectPiece(Vector2Int previousPos)
+    private Vector2 GetMouseWorldPosition()
     {
-        foreach (Vector2Int position in _selectedPieceLegalMoves)
-            GameEvents.RaiseUnHighlightEvent(position);
-
-        GameEvents.RaiseUnHighlightEvent(previousPos);
-
-        _selectedPieceLegalMoves.Clear();
-
-        _selectedPiece = null;
-    }
-
-    private void OnLegalMoveFound(Vector2Int position, bool isOccupiedByOpponent)
-    {
-        GameEvents.RaiseHighlightEvent(new Vector2Int(position.x, position.y),
-            isOccupiedByOpponent ? HighlightType.Capture : HighlightType.Move);
-
-        _selectedPieceLegalMoves.Add(position);
+        return _camera.ScreenToWorldPoint(Input.mousePosition);
     }
 }
