@@ -2,9 +2,9 @@ public class Move
 {
     public TileData From;
     public TileData To;
-    public ChessPiece CapturedPiece;
+    public PieceData CapturedPiece;
 
-    public Move(TileData from, TileData to, ChessPiece capturedPiece)
+    public Move(TileData from, TileData to, PieceData capturedPiece)
     {
         From = from;
         To = to;

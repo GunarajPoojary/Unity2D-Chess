@@ -49,7 +49,7 @@ public class PlayerController : MonoBehaviour
         TileData pieceTile = _chessBoard.GetTile(piece);
 
         _validMoves.Clear();
-        piece.CalculatePossibleMoves(_chessBoard, pieceTile, move => _validMoves.Add(move));
+        // piece.CalculatePossibleMoves(_chessBoard, pieceTile, move => _validMoves.Add(move));
 
         Debug.Log($"[PlayerController] Started dragging {piece.name} at {pieceTile}. " +
                   $"Found {_validMoves.Count} valid move(s).");
@@ -57,7 +57,7 @@ public class PlayerController : MonoBehaviour
         foreach (var move in _validMoves)
         {
             Debug.Log($"[PlayerController] Valid move → {move.To}" +
-                      (move.CapturedPiece != null ? $" (captures {move.CapturedPiece.name})" : ""));
+                      (move.CapturedPiece != null ? $" (captures {move.CapturedPiece.Type})" : ""));
         }
     }
 
